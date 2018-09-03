@@ -2,6 +2,9 @@
 data/train/*.mp4
 data/test/*.mp4
 
+# IDE files
+.idea/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
