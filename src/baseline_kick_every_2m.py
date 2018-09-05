@@ -22,4 +22,4 @@ def gen_prediction_every_n_best(files, n):
 if __name__ == '__main__':
     args = parse_args()
     result = gen_prediction_every_n_best(args['files'], 120)
-    result.to_csv(args['result'])
+    result.to_csv(args['output'])

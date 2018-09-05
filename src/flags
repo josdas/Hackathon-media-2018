@@ -1,0 +1,2 @@
+time_extractor.py files=[../data/test/resized_645001_5.mp4] output=../output/features/games_starts.csv
+baseline_kick_every_2m.py
