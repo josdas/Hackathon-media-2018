@@ -141,5 +141,4 @@ if __name__ == '__main__':
             'first_start': start[0],
             'second_start': start[1]
         })
-    table = pd.DataFrame(results)
-    table.to_csv(output_path)
+        pd.DataFrame(results).to_csv(output_path)
