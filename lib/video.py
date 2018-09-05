@@ -1,4 +1,3 @@
-from matplotlib import pyplot as plt
 import imageio
 
 
@@ -29,5 +28,6 @@ def get_video_shape(path):
 
 
 def show_img(img, k=1):
+    from matplotlib import pyplot as plt
     fig, ax = plt.subplots(figsize=(int(18 * k), int(20 * k)))
     ax.imshow(img, interpolation='nearest')
