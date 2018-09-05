@@ -23,6 +23,11 @@ def get_reader(path, frame_rate=1, size=None, skip=0):
             break
 
 
+def get_video_shape(path):
+    frame = next(get_reader(path))
+    return frame.shape[:2]
+
+
 def show_img(img, k=1):
     fig, ax = plt.subplots(figsize=(int(18 * k), int(20 * k)))
     ax.imshow(img, interpolation='nearest')
