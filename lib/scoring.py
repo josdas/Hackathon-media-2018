@@ -14,7 +14,7 @@ def find_match(row, y_true):
     return False
 
 
-def task_score(y_true, y_pred):
+def task_score_macro(y_true, y_pred):
     """
     :param y_true: pandas.DataFrame with columns: 'event_time', 'event_type', 'file_name'. Time in seconds.
     :param y_pred: like y_true
@@ -23,11 +23,28 @@ def task_score(y_true, y_pred):
     y_true = y_true.copy()
     y_pred = y_pred.copy()
     y_true['checked'] = False
+    if len(y_pred) == 0:
+        print('task_score: empty y_pred')
+        return 0
     y_pred['result'] = y_pred.apply(lambda row: find_match(row, y_true), axis=1)
     true_positives = len(y_pred[y_pred.result])
     false_positives = len(y_pred[~y_pred.result])
     false_negatives = len(y_true) - true_positives
+    print('task_score: true_positives={} false_positives={} false_negatives={}'. \
+          format(true_positives, false_positives, false_negatives))
     return true_positives / (true_positives + false_positives + false_negatives)
+
+
+def task_score(y_true, y_pred):
+    """
+    :param y_true: pandas.DataFrame with columns: 'event_time', 'event_type', 'file_name'. Time in seconds.
+    :param y_pred: like y_true
+    :return: f1 score after matching
+    """
+    s = 0
+    for type in ['удар по воротам', 'угловой', 'замена', 'желтая карточка', 'гол']:
+        s += task_score_macro(y_true[y_true['event_type'] == type], y_pred[y_pred['event_type'] == type])
+    return s / 5
 
 
 if __name__ == '__main__':
@@ -42,7 +59,7 @@ if __name__ == '__main__':
     y_pred['event_type'] = [1, 1, 1, 1]
     y_pred['file_name'] = [1, 1, 1, 1]
     score = task_score(y_true, y_pred)
-    assert(score == 2 / (2 + 2 + 1))
+    assert (score == 2 / (2 + 2 + 1))
 
     # Test 2
     y_true = pd.DataFrame()
@@ -51,13 +68,13 @@ if __name__ == '__main__':
     y_true['file_name'] = [1, 1, 1]
 
     y_pred = pd.DataFrame()
-    y_pred['event_time'] = [0, 165, 155 , 3000]
+    y_pred['event_time'] = [0, 165, 155, 3000]
     y_pred['event_type'] = [1, 1, 1, 1]
     y_pred['file_name'] = [1, 1, 1, 1]
     score = task_score(y_true, y_pred)
-    assert(score == 3 / (3 + 1))
+    assert (score == 3 / (3 + 1))
 
-    #Test 3
+    # Test 3
     y_true = pd.DataFrame()
     y_true['event_time'] = [0, 100, 110]
     y_true['event_type'] = [1, 1, 2]
@@ -68,4 +85,4 @@ if __name__ == '__main__':
     y_pred['event_type'] = [1, 1, 2, 1]
     y_pred['file_name'] = [1, 1, 1, 1]
     score = task_score(y_true, y_pred)
-    assert(score == 2 / (2 + 2 + 1))
+    assert (score == 2 / (2 + 2 + 1))

@@ -4,10 +4,12 @@ from collections import defaultdict, Counter
 from tqdm import tqdm
 from lib.video import get_reader, get_total_len, get_video_shape
 from lib.utils import parse_args
+import pickle
 
 GREEN_THRESHOLD = 0.4
 UI_PROB_THRESHOLD = 0.85
-N_TOP_COLORS = 50
+N_TOP_COLORS = 100
+STATIC_THERSHOLD = 0.3
 
 FRAME_RATE = 4
 SKIP_BEGGING = 0
@@ -25,7 +27,7 @@ def create_video_iter(path):
 
 def calc_green_pixels(frame):
     frame = frame.astype('float')
-    return frame[:, :, 1] * 2 > frame[:, :, 0] + frame[:, :, 2]
+    return frame[:, :, 1] * 1.5 > frame[:, :, 0] + frame[:, :, 2]
 
 
 def calc_green_counts(path):
@@ -41,6 +43,15 @@ def extract_green_mask(green_counts, threshold):
     return green_counts < threshold
 
 
+def search_best_green_threshold(green_counts, proportion):
+    last = 0
+    for gt in np.linspace(0, 1, 15):
+        mask = extract_green_mask(green_counts, gt)
+        if mask.mean() > proportion:
+            return gt
+        last = gt
+
+
 def clean_borders(mask, size=4):
     mask = mask.copy()
     borders = np.ones_like(mask)
@@ -49,7 +60,7 @@ def clean_borders(mask, size=4):
     return mask
 
 
-def color_discretization(color, k=5):
+def color_discretization(color, k=8):
     return tuple(color // k * k)
 
 
@@ -65,13 +76,17 @@ def create_colors_dict(path, green_mask):
     return colors_dict
 
 
+def search_best_static_thershold(n):
+    return n * FRAME_RATE
+
+
 def generate_static_pixels_mask(colors_dict, green_mask):
     mask = np.zeros_like(green_mask)
     for pixel, counter in colors_dict.items():
         mc = counter.most_common(N_TOP_COLORS)
         total = sum(v for k, v in counter.items())
         prob = sum(v for k, v in mc) / total
-        mask[pixel] = prob > 0.5
+        mask[pixel] = STATIC_THERSHOLD < prob < 0.9
     return mask
 
 
@@ -97,9 +112,12 @@ def ui_probability(frame, colors_dict, mask):
     return prob
 
 
-def find_two_segments(path, colors_dict, mask):
-    probs = [ui_probability(frame, colors_dict, mask)
-             for frame in create_video_iter(path)]
+def generate_probs(path, colors_dict, mask):
+    return [ui_probability(frame, colors_dict, mask)
+            for frame in create_video_iter(path)]
+
+
+def find_two_segments(probs):
     l = 45 * 60 // FRAME_RATE  # 45min in frames
     n = len(probs)
     pref = np.cumsum(np.array(probs) > UI_PROB_THRESHOLD)
@@ -116,29 +134,40 @@ def find_two_segments(path, colors_dict, mask):
 
 def find_game_starts(path):
     green_counts = calc_green_counts(path)
-    green_mask = extract_green_mask(green_counts, GREEN_THRESHOLD)
+    green_threshold = search_best_green_threshold(green_counts, proportion=0.05)
+    green_mask = extract_green_mask(green_counts, green_threshold)
     green_mask = clean_borders(green_mask)
     colors_dict = create_colors_dict(path, green_mask)
     static_mask = generate_static_pixels_mask(colors_dict, green_mask)
     colors_dict = create_top_color_dict(colors_dict, static_mask)
-    return find_two_segments(path, colors_dict, static_mask)
+    probs = generate_probs(path, colors_dict, static_mask)
+    return find_two_segments(probs), probs
 
 
 if __name__ == '__main__':
     args = parse_args()
     files = args['files']
+
     dir = args.get('dir', '.')
     if dir[-1] != '/':
         dir = dir + '/'
+
+    temp_dir = args.get('temp_dir', None)
+    if temp_dir is not None and temp_dir[-1] != '/':
+        temp_dir = temp_dir + '/'
+
     output_path = args.get('output', 'game_start.csv')
     results = []
     for file in tqdm(files):
         path = dir + file
         print(path)
-        start = find_game_starts(path)
+        start, probs = find_game_starts(path)
         results.append({
             'file_name': file,
             'first_start': start[0],
             'second_start': start[1]
         })
         pd.DataFrame(results).to_csv(output_path)
+        if temp_dir is not None:
+            with open(temp_dir + file + '.pickle', 'wb') as f:
+                pickle.dump(probs, f)
