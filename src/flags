@@ -2,3 +2,9 @@ time_extractor.py files=[resized_645001_5.mp4] dir=../data/test/ output=../outpu
 time_extractor.py files=[resized_645001_5.mp4,resized_645066_5.mp4,resized_645098_5.mp4,resized_645195_5.mp4,resized_645286_5.mp4,resized_645310_5.mp4,resized_646186_5.mp4,resized_648559_5.mp4] dir=../data/test output=../output/features/games_starts.csv
 baseline_kick_every_2m.py files=[645001_5.mp4,645066_5.mp4,645098_5.mp4,645195_5.mp4,645286_5.mp4,645310_5.mp4,646186_5.mp4,648559_5.mp4] result=../output/prediction/baseline.csv
 hackaton-f1.py ../data/train/events_data.csv ../output/prediction/baseline_train.csv
+
+time_extractor.py
+files=[resized_645001_5.mp4,resized_645066_5.mp4,resized_645098_5.mp4,resized_645195_5.mp4,resized_645286_5.mp4,resized_645310_5.mp4,resized_646186_5.mp4,resized_648559_5.mp4]
+dir=../data/test
+output=../output/features/games_starts_test.csv
+temp_dir=../output/features/ui_probs
