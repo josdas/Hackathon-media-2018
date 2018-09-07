@@ -69,7 +69,10 @@ def create_events_type(file_name, full_event_table):
     for _, row in full_event_table.iterrows():
         if row.file_name != file_name:
             continue
-        l, r = convert_time(row.event_time) + 2, convert_time(row.event_end) - 1
+        if row.event_time == row.event_end:
+            l = r = convert_time(row.event_time)
+        else:
+            l, r = convert_time(row.event_time) + 2, convert_time(row.event_end) - 1
         for i in range(l, r + 1):
             events_type[i] = row.event_type
     return events_type
@@ -162,6 +165,30 @@ def generate_negsamples(files, model, full_event_table):
     return np.array(X_dataset), np.array(y_dataset)
 
 
+def generate_dataset(files, model):  # TODO CHECK
+    X, file_name = create_dataset_X(files)
+    y_pred = model.predict(X)
+    data_set = []
+    cur_file = None
+    cur_i = 0
+    for file, event_type in zip(file_name, y_pred):
+        if file != cur_file:
+            cur_i = 0
+            cur_file = file
+        else:
+            cur_i += 1
+        if event_type == NONE_TYPE:
+            continue
+        data_set.append({
+            'file_name': file,
+            'event_type': event_type,
+            'event_time': seconds_to_hours(cur_i),
+            'event_end': seconds_to_hours(cur_i),
+
+        })
+    return pd.DataFrame(data_set)
+
+
 def predict(files, model, starts_dict):  # TODO CHECK
     X, file_name = create_dataset_X(files)
     y_pred = model.predict(X)
@@ -211,7 +238,7 @@ if __name__ == '__main__':
     files = args['files']
     assert (len(files) == len(set(files)))
     mode = args['mode']
-    assert (mode in ['train', 'test', 'neg'])
+    assert (mode in ['train', 'test', 'neg', 'gen'])
 
     VIDEO_DIR = args.get('dir', '.')
     if VIDEO_DIR[-1] != '/':
@@ -236,7 +263,6 @@ if __name__ == '__main__':
         time_table_path = args['time_table']
 
         model_path = args['model']
-
         model = load_pickle(model_path)
         time_table = pd.read_csv(time_table_path)
         starts_dict = start_table_to_dict(time_table)
@@ -245,7 +271,7 @@ if __name__ == '__main__':
 
         prediction = predict(files, model, starts_dict)
         prediction.to_csv(output)
-    else:
+    elif mode == 'neg':
         print('Negsampling')
         model_path = args['model']
         model = load_pickle(model_path)
@@ -254,3 +280,9 @@ if __name__ == '__main__':
         full_event_table = full_event_table[full_event_table['event_type'].isin(GOOD_EVENTS)]
         X, y = generate_negsamples(files, model, full_event_table)
         save_pickle((X, y), output)
+    elif mode == 'gen':
+        print('Generation')
+        model_path = args['model']
+        model = load_pickle(model_path)
+        data_set = generate_dataset(files, model)
+        data_set.to_csv(output)
