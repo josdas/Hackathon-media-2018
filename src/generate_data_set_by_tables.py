@@ -12,7 +12,6 @@ if __name__ == '__main__':
 
     time_table = pd.read_csv(time_table_path)
     starts_dict = start_table_to_dict(time_table)
-    ends_dict = end_table_to_dict(time_table)
 
     train_table = pd.read_csv(train_table_path)
 
@@ -21,9 +20,8 @@ if __name__ == '__main__':
         if x.event_type not in EVENTS_TYPE:
             continue
         starts = starts_dict['resized_' + x.file_name]
-        ends = starts_dict['resized_' + x.file_name]
         event_time_video = convert_time(x.event_time)
-        event_time = cur_time(event_time_video, starts, ends)
+        event_time = cur_time(event_time_video, starts)
         data_set.append({
             'file_name': x.file_name,
             'event_type': x.event_type,
