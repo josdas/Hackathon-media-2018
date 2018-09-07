@@ -14,3 +14,4 @@ def cross_val_score(model, data, files, cv):
         scores.append(score)
         print('cross_val_score: score={} test_files={}'.format(score, files[test]))
     return np.array(scores)
+b

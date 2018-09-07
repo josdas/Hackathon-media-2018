@@ -1,15 +1,21 @@
 import numpy as np
 import pandas as pd
 from collections import defaultdict, Counter
-from tqdm import tqdm
 from lib.video import get_reader, get_total_len, get_video_shape
 from lib.utils import parse_args
 import pickle
 
+if __name__ == 'src.time_extractor':
+    from tqdm import tqdm_notebook as tqdm
+
+    print('Use tqdm_notebook')
+else:
+    from tqdm import tqdm
+
 GREEN_THRESHOLD = 0.4
 UI_PROB_THRESHOLD = 0.85
-N_TOP_COLORS = 100
-STATIC_THERSHOLD = 0.3
+N_TOP_COLORS = 80
+STATIC_THERSHOLD = 0.35
 
 FRAME_RATE = 4
 SKIP_BEGGING = 0
@@ -132,13 +138,23 @@ def find_two_segments(probs):
     return best_l1 * FRAME_RATE, best_l2 * FRAME_RATE
 
 
-def find_game_starts(path):
+def generate_green_mask(path, proportion):
     green_counts = calc_green_counts(path)
-    green_threshold = search_best_green_threshold(green_counts, proportion=0.05)
+    green_threshold = search_best_green_threshold(green_counts, proportion=proportion)
     green_mask = extract_green_mask(green_counts, green_threshold)
     green_mask = clean_borders(green_mask)
+    return green_mask
+
+
+def generate_static_mask(path):
+    green_mask = generate_green_mask(path)
     colors_dict = create_colors_dict(path, green_mask)
     static_mask = generate_static_pixels_mask(colors_dict, green_mask)
+    return static_mask, colors_dict
+
+
+def find_game_starts(path):
+    static_mask, colors_dict = generate_static_mask(path)
     colors_dict = create_top_color_dict(colors_dict, static_mask)
     probs = generate_probs(path, colors_dict, static_mask)
     return find_two_segments(probs), probs
