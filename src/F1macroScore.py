@@ -95,6 +95,7 @@ for event_type in EVENTS_TYPE:
             else:
                 if abs(right_time - convert_time(event.event_time)) < 60:
                     elabels.at[index, 'checked'] = True
+                    print(event_type, right_time - convert_time(event.event_time))
                     return True
         return False
 
@@ -104,6 +105,7 @@ for event_type in EVENTS_TYPE:
     false_positives = len(edata[~edata.result])
     false_negatives = len(elabels) - true_positives
     f1_score = true_positives / (true_positives + false_positives + false_negatives)
+    print(edata[~edata.result])
     print(event_type, true_positives, false_positives, false_negatives, f1_score)
     f1_scores.append(f1_score)
 

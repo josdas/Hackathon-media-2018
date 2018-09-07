@@ -65,7 +65,7 @@ def end_table_to_dict(table):
 ONE_TIME_SEC = 45 * 60
 
 
-def cur_time(i_frame, starts, ends, FRAME_RATE=1):  # TODO CHECK
+def cur_time(i_frame, starts, FRAME_RATE=1):  # TODO CHECK
     time = i_frame * FRAME_RATE
     if time > starts[1]:
         return time - starts[1] + ONE_TIME_SEC
